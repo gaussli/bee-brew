@@ -1,0 +1,48 @@
+{
+  "formulae": [
+    {
+      "name": "node",
+      "full_name": "node",
+      "tap": "homebrew/core",
+      "desc": "Open-source, cross-platform JavaScript runtime environment",
+      "license": "MIT",
+      "homepage": "https://nodejs.org/",
+      "versions": {
+        "stable": "26.13.0",
+        "head": "HEAD",
+        "bottle": false
+      },
+      "dependencies": ["openssl@3", "icu4c"],
+      "build_dependencies": ["pkgconf"],
+      "installed": [
+        { "version": "26.5.0", "time": 1784866024, "installed_on_request": true }
+      ],
+      "outdated": true,
+      "pinned": false,
+      "keg_only": false,
+      "caveats": null
+    },
+    {
+      "name": "git",
+      "full_name": "git",
+      "tap": "homebrew/core",
+      "desc": "Distributed revision control system",
+      "license": "GPL-2.0-only",
+      "homepage": "https://git-scm.com",
+      "versions": {
+        "stable": "2.45.0",
+        "head": null,
+        "bottle": true
+      },
+      "dependencies": ["gettext", "pcre2"],
+      "build_dependencies": [],
+      "installed": [
+        { "version": "2.45.0", "time": 1715000000, "installed_as_dependency": false, "installed_on_request": true }
+      ],
+      "outdated": false,
+      "pinned": false,
+      "keg_only": false,
+      "caveats": null
+    }
+  ]
+}

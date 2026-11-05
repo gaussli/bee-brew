@@ -1,0 +1,215 @@
+classDiagram
+    direction TB
+
+    class BrewPackage {
+        +String id
+        +String name
+        +PackageType type
+        +String? fullName
+        +String? desc
+        +String? homepage
+        +String? license
+        +String? version
+        +String[] installedVersions
+        +String? currentVersion
+        +Bool installed
+        +Bool outdated
+        +Bool pinned
+        +Bool kegOnly
+        +Bool autoUpdates
+        +String? caveats
+        +Date? installedTime
+        +Bool installedAsDependency
+        +Bool installedOnRequest
+        +String[] dependencies
+        +String[] buildDependencies
+        +installedVersion() String?
+        +displayVersion() String
+    }
+
+    class PackageType {
+        <<enumeration>>
+        formula
+        cask
+    }
+
+    class BrewFormulaJSON {
+        +String name
+        +String? fullName
+        +String? desc
+        +String? homepage
+        +String? license
+        +BrewVersions? versions
+        +String[]? dependencies
+        +String[]? buildDependencies
+        +BrewInstalledEntry[]? installed
+        +Bool? outdated
+        +Bool? pinned
+        +Bool? kegOnly
+        +String? caveats
+    }
+
+    class BrewFormulaListJSON {
+        +BrewFormulaJSON[] formulae
+    }
+
+    class BrewCaskJSON {
+        +String token
+        +String? fullToken
+        +String[]? name
+        +String? desc
+        +String? homepage
+        +String? version
+        +String? installed
+        +Int64? installedTime
+        +Bool? outdated
+        +Bool? autoUpdates
+        +String? caveats
+    }
+
+    class BrewCaskListJSON {
+        +BrewCaskJSON[] casks
+    }
+
+    class BrewOutdatedJSON {
+        +BrewOutdatedFormula[]? formulae
+        +BrewOutdatedCask[]? casks
+    }
+
+    class BrewSearchItem {
+        +String? name
+        +String? token
+        +String? desc
+        +String? homepage
+        +String? version
+        +identifier() String
+    }
+
+    class BrewEnvironment {
+        +String version
+        +String prefix
+        +String repository
+        +String cellar
+        +String cpu
+        +String os
+    }
+
+    class CleanupItem {
+        +String path
+        +Bool isDryRun
+    }
+
+    class OperationLogEntry {
+        +UUID id
+        +Stream stream
+        +String text
+        +Date timestamp
+    }
+
+    class BrewService {
+        <<@MainActor ObservableObject>>
+        +Bool isHomebrewInstalled
+        +String homebrewVersion
+        +Bool isLoading
+        +BrewError? lastError
+        +OperationLogEntry[] operationLog
+        +Set~String~ runningOperations
+        +detectEnvironment() BrewEnvironment
+        +listInstalledFormulae() BrewPackage[]
+        +listInstalledCasks() BrewPackage[]
+        +listInstalled() BrewPackage[]
+        +listOutdated() BrewPackage[]
+        +search(query) BrewPackage[]
+        +getFormulaInfo(name) BrewPackage
+        +getCaskInfo(token) BrewPackage
+        +install(pkg)
+        +uninstall(pkg)
+        +upgrade(pkg)
+        +upgradeAll()
+        +updateHomebrew()
+        +cleanupDryRun() CleanupItem[]
+        +cleanup()
+    }
+
+    class CommandExecutor {
+        <<singleton>>
+        +String brewPath
+        +run(executableURL, arguments) ExecutionResult
+        +runBrew(arguments) ExecutionResult
+        +runBrewJSON(type, arguments) T
+        +runBrewStreaming(arguments) AsyncStream
+        +detectBrewPath() String?
+        +brewVersion() String
+        +brewPrefix() String
+    }
+
+    class InputValidator {
+        <<static>>
+        +validatePackageName(name)
+        +sanitizeQuery(query) String
+        +validateBrewPath(path) Bool
+    }
+
+    class PackageViewModel {
+        <<@MainActor ObservableObject>>
+        +BrewPackage[] installedPackages
+        +BrewPackage[] outdatedPackages
+        +BrewPackage[] searchResults
+        +Set~String~ selectedPackages
+        +BrewPackage? selectedPackage
+        +BrewPackage? packageDetail
+        +loadInitialData()
+        +loadInstalledPackages()
+        +checkForUpdates()
+        +performSearch(query)
+        +loadPackageDetail(pkg)
+        +install(pkg)
+        +uninstall(pkg)
+        +upgrade(pkg)
+        +upgradeAll()
+        +bulkUninstall(pkgs)
+        +bulkUpgrade(pkgs)
+        +updateHomebrew()
+        +cleanup()
+    }
+
+    class SettingsViewModel {
+        <<@MainActor ObservableObject>>
+        +String brewPath
+        +String customBrewPath
+        +Bool useCustomPath
+        +AppTheme theme
+        +effectiveBrewPath() String
+        +detectBrewPath()
+        +validateBrewPath() Bool
+    }
+
+    class BrewError {
+        <<enumeration Error>>
+        brewNotFound
+        invalidPackageName
+        invalidPath
+        commandFailed
+        jsonDecode
+        notInstalled
+    }
+
+    BrewPackage --> PackageType : type
+    BrewFormulaListJSON --> BrewFormulaJSON
+    BrewCaskListJSON --> BrewCaskJSON
+    BrewOutdatedJSON --> BrewOutdatedFormula
+    BrewOutdatedJSON --> BrewOutdatedCask
+    BrewService --> BrewPackage : 产出
+    BrewService --> BrewEnvironment : 产出
+    BrewService --> CleanupItem : 产出
+    BrewService --> OperationLogEntry : 进度
+    BrewService --> CommandExecutor : 调用
+    BrewService --> InputValidator : 校验
+    BrewService ..> BrewError : 抛出
+    CommandExecutor --> BrewFormulaListJSON : 解码
+    CommandExecutor --> BrewCaskListJSON : 解码
+    CommandExecutor --> BrewOutdatedJSON : 解码
+    CommandExecutor --> BrewSearchItem : 解码
+    PackageViewModel --> BrewService : 编排
+    PackageViewModel --> BrewPackage : 状态
+    SettingsViewModel --> CommandExecutor : brewPath 注入

@@ -1,0 +1,98 @@
+sequenceDiagram
+    autonumber
+    actor U as 用户
+    participant V as View(InstalledView/SearchView/UpdatesView)
+    participant VM as PackageViewModel(@MainActor)
+    participant S as BrewService(@MainActor)
+    participant C as CommandExecutor
+    participant B as brew CLI
+
+    %% ===== 冷启动：加载已安装 + 可更新（FR-001/002/003/010，NFR-001） =====
+    Note over U,B: 冷启动数据加载（loadInitialData）
+    V->>VM: onAppear / init 触发 loadInitialData()
+    VM->>S: async let listInstalled()
+    par 并发读取
+        S->>C: runBrewJSON(list --formula --json=v2)
+        C->>B: brew list --formula --json=v2
+        B-->>C: {formulae:[...]}
+        C-->>S: BrewFormulaListJSON
+        S->>S: map → [BrewPackage]
+    and
+        S->>C: runBrewJSON(list --cask --json=v2)
+        C->>B: brew list --cask --json=v2
+        B-->>C: {casks:[...]}
+        C-->>S: BrewCaskListJSON
+        S->>S: map → [BrewPackage]
+    end
+    S->>C: runBrewJSON(outdated --json=v2)
+    C->>B: brew outdated --json=v2
+    B-->>C: {formulae:[...], casks:[...]}
+    C-->>S: BrewOutdatedJSON
+    S->>S: map → [BrewPackage](outdated)
+    S-->>VM: installed + outdated 列表
+    VM->>VM: 写 @Published installedPackages/outdatedPackages
+    VM-->>V: SwiftUI 响应式刷新
+
+    %% ===== 搜索（FR-005，NFR-002 300ms 防抖） =====
+    Note over U,B: 全局搜索（300ms 防抖）
+    U->>V: 输入关键词
+    V->>VM: searchQuery 赋值
+    VM->>VM: debounce(300ms)
+    VM->>S: search(query)
+    S->>C: runBrewJSON(search --json=v2 <query>)
+    C->>B: brew search --json=v2 <query>
+    B-->>C: [BrewSearchItem...]
+    C-->>S: [BrewSearchItem]
+    S->>S: map → [BrewPackage]
+    S-->>VM: searchResults
+    VM-->>V: 渲染结果列表
+
+    %% ===== 安装包（FR-006/007/014，NFR-011） =====
+    Note over U,B: 安装包（流式进度）
+    U->>V: 点击「安装」
+    V->>VM: install(pkg)
+    VM->>VM: packageOperations[id]=installing（防重入）
+    VM->>S: install(pkg)
+    S->>C: validatePackageName(name)
+    S->>C: runBrewStreaming(install [--cask] name)
+    C->>B: brew install name
+    loop 流式输出
+        B-->>C: stdout/stderr 片段
+        C-->>S: StreamEvent.stdout/.stderr
+        S->>S: 追加 operationLog（FR-014）
+    end
+    B-->>C: 退出码
+    C-->>S: StreamEvent.exit(code)
+    alt code == 0
+        S-->>VM: 成功
+        VM->>S: async let listInstalled() + listOutdated()
+        S-->>VM: 刷新后列表
+        VM->>VM: packageOperations[id]=success
+        VM-->>V: 状态/列表刷新
+    else code != 0
+        S-->>VM: throw commandFailed(stderr)
+        VM->>VM: packageOperations[id]=failed
+        VM-->>V: 展示错误横幅
+    end
+
+    %% ===== 系统维护（FR-015/016） =====
+    Note over U,B: 更新 Homebrew + 清理预览
+    U->>V: 点击「更新 Homebrew」
+    V->>VM: updateHomebrew()
+    VM->>S: updateHomebrew()
+    S->>C: runBrewStreaming(update)
+    C->>B: brew update
+    B-->>C: 流式输出 → exit
+    C-->>S: 完成
+    S-->>VM: 完成 / 异常
+
+    U->>V: 点击「清理旧版本」
+    V->>VM: cleanupDryRun()
+    VM->>S: cleanupDryRun()
+    S->>C: runBrew(cleanup --dry-run)
+    C->>B: brew cleanup --dry-run
+    B-->>C: 文本行（待删除项）
+    C-->>S: ExecutionResult
+    S->>S: 解析 → [CleanupItem]
+    S-->>VM: 预览列表
+    VM-->>V: 展示清理预览

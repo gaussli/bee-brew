@@ -1,0 +1,30 @@
+{
+  "casks": [
+    {
+      "token": "visual-studio-code",
+      "full_token": "visual-studio-code",
+      "name": ["Visual Studio Code"],
+      "desc": "Code editing. Redefined.",
+      "homepage": "https://code.visualstudio.com/",
+      "version": "1.96.2",
+      "installed": "1.96.2",
+      "installed_time": 1715000000,
+      "outdated": false,
+      "auto_updates": true,
+      "caveats": null
+    },
+    {
+      "token": "google-chrome",
+      "full_token": "google-chrome",
+      "name": ["Google Chrome"],
+      "desc": "Web browser",
+      "homepage": "https://www.google.com/chrome/",
+      "version": "157.0.8103.39",
+      "installed": null,
+      "installed_time": null,
+      "outdated": false,
+      "auto_updates": true,
+      "caveats": null
+    }
+  ]
+}
