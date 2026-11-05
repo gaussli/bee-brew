@@ -57,6 +57,57 @@ struct BrewPackage: Identifiable, Codable, Hashable {
         }
     }
 
+    // MARK: - 包图标（Formula 按名称差异化，Cask 统一）
+    /// 根据包名返回差异化 SF Symbol，避免所有 Formula 都显示同一个 terminal 图标。
+    var iconName: String {
+        guard isFormula else { return type.iconName }
+        let lower = name.lowercased()
+        switch lower {
+        case let n where n.contains("python"):
+            return "chevron.left.forwardslash.chevron.right"
+        case let n where n.contains("node"):
+            return "arrow.triangle.branch"
+        case let n where n.contains("git") || n == "gh":
+            return "tuningfork"
+        case let n where n == "go" || n.hasPrefix("go@") || n.hasPrefix("golang") || n.hasPrefix("go-"):
+            return "g.circle"
+        case let n where n.contains("rust") || n.contains("cargo"):
+            return "r.circle"
+        case let n where n.contains("ruby"):
+            return "diamond"
+        case let n where n.contains("java") || n.contains("openjdk"):
+            return "cup.and.saucer"
+        case let n where n.contains("sql") || n.contains("postgres") || n.contains("mysql"):
+            return "cylinder.split.1x2"
+        case let n where n.contains("redis"):
+            return "externaldrive"
+        case let n where n.contains("nginx") || n.contains("httpd") || n.contains("apache"):
+            return "server.rack"
+        case let n where n.contains("docker") || n.contains("podman"):
+            return "shippingbox"
+        case let n where n.contains("curl") || n.contains("wget"):
+            return "arrow.down.circle"
+        case let n where n.contains("vim") || n.contains("neovim") || n.contains("emacs"):
+            return "chevron.left.slash.chevron.right"
+        case let n where n.contains("ffmpeg") || n.contains("video") || n.contains("media"):
+            return "play.rectangle"
+        case let n where n.contains("gcc") || n.contains("clang") || n.contains("llvm"):
+            return "hammer"
+        case let n where n.contains("openssl") || n.contains("security") || n.contains("key"):
+            return "lock.shield"
+        case let n where n.contains("cmake") || n.contains("make") || n.contains("ninja") || n.contains("bazel"):
+            return "wrench.and.screwdriver"
+        case let n where n.contains("zsh") || n.contains("bash") || n.contains("fish"):
+            return "chevron.right.square"
+        case let n where n.contains("terraform") || n.contains("ansible") || n.contains("kubectl") || n.contains("k8s"):
+            return "point.3.connected.trianglepath.dotted"
+        case let n where n.contains("yarn") || n.contains("npm") || n.contains("pnpm") || n.contains("bun"):
+            return "shippingbox.fill"
+        default:
+            return type.iconName
+        }
+    }
+
     // MARK: - 包状态（UI 展示用）
     enum PackageStatus: Equatable {
         case notInstalled

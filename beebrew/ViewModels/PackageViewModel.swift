@@ -239,9 +239,11 @@ final class PackageViewModel: ObservableObject {
     }
 
     func cleanupDryRun() async -> [CleanupItem] {
+        errorMessage = nil
         do {
             cleanupPreview = try await brewService.cleanupDryRun()
         } catch {
+            cleanupPreview = []
             errorMessage = errorText(error)
         }
         return cleanupPreview
@@ -259,6 +261,11 @@ final class PackageViewModel: ObservableObject {
 
     func cancelOperations() {
         brewService.cancelAll()
+    }
+
+    /// 清空操作日志（日志查看器入口使用）
+    func clearOperationLog() {
+        brewService.clearOperationLog()
     }
 
     // MARK: - 选中状态

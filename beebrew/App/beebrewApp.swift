@@ -54,6 +54,14 @@ struct beebrewApp: App {
                     NotificationCenter.default.post(name: .searchFocusRequested, object: nil)
                 }
                 .keyboardShortcut("f", modifiers: .command)
+
+                Divider()
+
+                // 查看操作日志
+                Button("查看日志") {
+                    NotificationCenter.default.post(name: .logViewerRequested, object: nil)
+                }
+                .keyboardShortcut("l", modifiers: [.command, .shift])
             }
         }
 
@@ -69,7 +77,8 @@ struct beebrewApp: App {
     }
 }
 
-// MARK: - 通知扩展（搜索聚焦，FR-025）
+// MARK: - 通知扩展（搜索聚焦 / 日志查看，FR-025）
 extension Notification.Name {
     static let searchFocusRequested = Notification.Name("searchFocusRequested")
+    static let logViewerRequested = Notification.Name("logViewerRequested")
 }

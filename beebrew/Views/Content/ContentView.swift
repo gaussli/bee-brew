@@ -7,6 +7,7 @@ struct ContentView: View {
     @Environment(\.themeManager) private var themeManager
 
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var showLogViewer: Bool = false
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
@@ -20,6 +21,12 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 260, ideal: 300)
         }
         .frame(minWidth: 900, minHeight: 600)
+        .sheet(isPresented: $showLogViewer) {
+            LogViewerSheet()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .logViewerRequested)) { _ in
+            showLogViewer = true
+        }
     }
 
     // MARK: - 中间内容列

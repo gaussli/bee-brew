@@ -6,6 +6,8 @@ struct PackageDetailView: View {
     @EnvironmentObject private var packageViewModel: PackageViewModel
     @Environment(\.themeManager) private var themeManager
 
+    @State private var showUpgradeConfirm: Bool = false
+
     var body: some View {
         Group {
             if let package = packageViewModel.packageDetail ?? packageViewModel.selectedPackage {
@@ -15,6 +17,18 @@ struct PackageDetailView: View {
             }
         }
         .navigationTitle("详情")
+        .alert("确认升级", isPresented: $showUpgradeConfirm) {
+            Button("升级", role: .destructive) {
+                if let p = packageViewModel.packageDetail ?? packageViewModel.selectedPackage {
+                    Task { await packageViewModel.upgrade(p) }
+                }
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            if let p = packageViewModel.packageDetail ?? packageViewModel.selectedPackage {
+                Text("将 \(p.name) 从 \(p.installedVersion ?? "未知") 升级到 \(p.currentVersion ?? "最新版本")。是否继续？")
+            }
+        }
     }
 
     // MARK: - 详情内容
@@ -23,7 +37,7 @@ struct PackageDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 // 头部
                 HStack(spacing: 10) {
-                    Image(systemName: package.type.iconName)
+                    Image(systemName: package.iconName)
                         .font(.title2)
                         .foregroundColor(package.type.color)
                         .frame(width: 44, height: 44)
@@ -61,8 +75,6 @@ struct PackageDetailView: View {
                     if package.installedVersions.count > 1 {
                         DetailRow(label: "已安装版本", value: package.installedVersions.joined(separator: ", "))
                     }
-                    DetailRow(label: "大小", value: "—")
-                    DetailRow(label: "路径", value: "—")
                     if let license = package.license {
                         DetailRow(label: "许可证", value: license)
                     }
@@ -155,7 +167,7 @@ struct PackageDetailView: View {
 
                 case .outdated:
                     Button {
-                        Task { await packageViewModel.upgrade(package) }
+                        showUpgradeConfirm = true
                     } label: {
                         Label("升级", systemImage: "arrow.up.circle")
                             .frame(maxWidth: .infinity)

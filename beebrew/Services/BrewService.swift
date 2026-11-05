@@ -199,6 +199,11 @@ final class BrewService: ObservableObject {
         commandExecutor.cancelAll()
     }
 
+    /// 清空操作日志（日志查看器入口使用）
+    func clearOperationLog() {
+        operationLog.removeAll()
+    }
+
     // MARK: - 私有实现
     private func runStreamingOperation(id: String, arguments: [String]) async throws {
         guard !runningOperations.contains(id) else { return }

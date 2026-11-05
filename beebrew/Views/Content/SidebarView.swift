@@ -40,10 +40,15 @@ struct SidebarView: View {
                         Label("未检测到 Homebrew", systemImage: "exclamationmark.triangle.fill")
                             .font(.caption)
                             .foregroundColor(AppColors.warning)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     } else {
                         Label(packageViewModel.environment.version, systemImage: "checkmark.circle.fill")
                             .font(.caption)
                             .foregroundColor(AppColors.success)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .truncationMode(.middle)
                     }
                     Text("已安装 \(packageViewModel.installedPackages.count)")
                         .font(.caption)
