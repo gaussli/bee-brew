@@ -29,7 +29,10 @@ final class CommandExecutor {
     private var activeProcesses: [Process] = []
 
     init() {
-        brewPath = CommandExecutor.detectBrewPath() ?? "/opt/homebrew/bin/brew"
+        // 使用默认路径初始化，避免在 init 阶段（可能发生于主线程，如 SwiftUI 视图首次访问
+        // CommandExecutor.shared 时）同步执行 `which brew` 阻塞 UI 导致 AttributeGraph 崩溃。
+        // 实际路径由 SettingsViewModel 在后台异步探测后注入。
+        brewPath = "/opt/homebrew/bin/brew"
     }
 
     // MARK: - 核心执行（无 shell）

@@ -24,11 +24,20 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - 初始化
     init() {
         loadSettings()
-        applyBrewPath()
+        // 同步注入已持久化路径（避免 init 阶段在主线程执行 `which brew` 阻塞 UI，
+        // 导致 SwiftUI AttributeGraph precondition_failure 崩溃）。
+        applyBrewPath(detectIfNeeded: false)
+        // 首次启动无持久化路径时，异步探测真实 brew 位置后回填。
+        if brewPath.isEmpty {
+            Task { [weak self] in
+                await self?.detectAndApplyBrewPathAsync()
+            }
+        }
     }
 
     // MARK: - Homebrew 路径（FR-017）
-    /// 有效 brew 路径：自定义 > 自动检测 > 默认
+    /// 有效 brew 路径：自定义 > 自动检测 > 默认。
+    /// - Parameter detect: 当无可用路径时是否触发同步探测（默认 false，避免阻塞主线程）。
     var effectiveBrewPath: String {
         if useCustomPath && !customBrewPath.isEmpty {
             return customBrewPath
@@ -36,28 +45,51 @@ final class SettingsViewModel: ObservableObject {
         if !brewPath.isEmpty {
             return brewPath
         }
-        return CommandExecutor.detectBrewPath() ?? "/opt/homebrew/bin/brew"
+        return "/opt/homebrew/bin/brew"
     }
 
-    /// 将有效路径注入 CommandExecutor，供后续所有命令使用
-    func applyBrewPath() {
-        let path = effectiveBrewPath
+    /// 异步探测 brew 路径（不阻塞主线程），成功后注入 CommandExecutor。
+    private func detectAndApplyBrewPathAsync() async {
+        let path = await Task.detached {
+            CommandExecutor.detectBrewPath()
+        }.value
+        guard let detected = path, !detected.isEmpty else { return }
+        // 用户已手动配置时，不再覆盖。
+        if useCustomPath && !customBrewPath.isEmpty { return }
+        brewPath = detected
+        applyBrewPath(detectIfNeeded: false)
+        persistSettings()
+    }
+
+    /// 将有效路径注入 CommandExecutor，供后续所有命令使用。
+    /// - Parameter detectIfNeeded: 为 true 时在无可用路径时同步探测（仅后台场景使用，主线程传 false）。
+    func applyBrewPath(detectIfNeeded: Bool = false) {
+        var path = effectiveBrewPath
+        if detectIfNeeded && (path.isEmpty || path == "/opt/homebrew/bin/brew") {
+            if let detected = CommandExecutor.detectBrewPath() {
+                path = detected
+            }
+        }
         if InputValidator.validateBrewPath(path) {
             CommandExecutor.shared.brewPath = path
         }
     }
 
-    /// 自动检测 brew 路径（无 shell）
+    /// 自动检测 brew 路径（无 shell，异步执行不阻塞 UI）
     func detectBrewPath() {
         isLoading = true
         errorMessage = nil
         successMessage = nil
 
-        Task {
-            if let path = CommandExecutor.detectBrewPath() {
-                brewPath = path
-                applyBrewPath()
-                successMessage = "已检测到 Homebrew：\(path)"
+        Task { [weak self] in
+            guard let self else { return }
+            let path = await Task.detached {
+                CommandExecutor.detectBrewPath()
+            }.value
+            if let detected = path, !detected.isEmpty {
+                brewPath = detected
+                applyBrewPath(detectIfNeeded: false)
+                successMessage = "已检测到 Homebrew：\(detected)"
             } else {
                 errorMessage = "未检测到 Homebrew 安装"
             }
@@ -80,7 +112,7 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - 持久化
     func saveSettings() {
         persistSettings()
-        applyBrewPath()
+        applyBrewPath(detectIfNeeded: false)
         successMessage = "设置已保存"
     }
 
