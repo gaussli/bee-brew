@@ -33,6 +33,15 @@ struct SidebarView: View {
 
             Divider()
 
+            // 日志入口
+            Button {
+                NotificationCenter.default.post(name: .logViewerRequested, object: nil)
+            } label: {
+                Label("日志", systemImage: "doc.text.magnifyingglass")
+                    .foregroundColor(AppColors.textPrimary)
+            }
+            .buttonStyle(.plain)
+
             // 环境状态（FR-001）
             Section {
                 VStack(alignment: .leading, spacing: 6) {

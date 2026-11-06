@@ -96,7 +96,7 @@ struct UpdatesView: View {
 
             Spacer()
 
-            if packageViewModel.isLoading {
+            if packageViewModel.isCheckingUpdates {
                 ProgressView().controlSize(.small)
             }
 
@@ -105,6 +105,7 @@ struct UpdatesView: View {
             } label: {
                 Label("重新检查", systemImage: "arrow.clockwise")
             }
+            .disabled(packageViewModel.isCheckingUpdates)
 
             Text("可升级 \(packageViewModel.outdatedPackages.count)")
                 .font(.caption)
@@ -302,9 +303,11 @@ struct CleanupPreviewSheet: View {
                     .foregroundColor(AppColors.textSecondary)
                 Spacer()
                 Button("取消") { dismiss() }
+                    .buttonStyle(SecondaryButtonStyle())
                 Button("重新加载") {
                     Task { await loadPreview() }
                 }
+                .buttonStyle(SecondaryButtonStyle())
                 .disabled(isLoadingCleanup)
                 Button("执行清理") {
                     Task {

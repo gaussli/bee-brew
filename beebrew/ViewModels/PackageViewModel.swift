@@ -51,6 +51,7 @@ final class PackageViewModel: ObservableObject {
     @Published var filter = PackageFilter()                  // FR-019/020 预留
     @Published var isLoading: Bool = false
     @Published var isSearching: Bool = false
+    @Published var isCheckingUpdates: Bool = false
     @Published var errorMessage: String?
     @Published var packageOperations: [String: PackageOperationState] = [:]
     @Published var environment: BrewEnvironment = BrewEnvironment()
@@ -113,6 +114,8 @@ final class PackageViewModel: ObservableObject {
     }
 
     func checkForUpdates() async {
+        isCheckingUpdates = true
+        defer { isCheckingUpdates = false }
         do {
             outdatedPackages = try await brewService.listOutdated()
         } catch {
